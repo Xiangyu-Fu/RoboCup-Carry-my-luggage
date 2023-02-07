@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>hsrb_wrs_gazebo_launch</name>
+  <version>0.0.1</version>
+  <description>Launch files for WRS simulator</description>
+
+  <maintainer email="nobuyuki_matsuno@mail.toyota.co.jp">Nobuyuki Matsuno</maintainer>
+
+  <license>TMC</license>
+
+  <author>Nobuyuki Matsuno</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>hsrb_gazebo_launch</exec_depend>
+  <exec_depend>roscpp</exec_depend> --
+  <test_depend>roslaunch</test_depend>
+  <exec_depend>tmc_wrs_gazebo_worlds</exec_depend>
+
+  <test_depend>roslaunch</test_depend>
+
+  <export/>
+</package>

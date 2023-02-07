@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Launch rviz -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find object_detection_world)/config/hsrb.rviz" required="true" />
+    
+    <!-- Launch controller node -->
+    <node pkg="object_detection" type="hsrb_head_controller" name="hsrb_head_controller" output="screen" />
+    
+    <include file="$(find hsrb_moveit_config)/launch/hsrb_demo_with_controller.launch">
+    </include>
+
+</launch>

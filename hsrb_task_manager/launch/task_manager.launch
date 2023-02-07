@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- <include file="$(find hsrb_human_following)/launch/start_camera.launch" >
+    <arg name="webcam" value="true" />
+    <arg name="publish_dummy_frames" value="true" />
+    <arg name="camera_xyz" value="0 0 1.4" />
+    <arg name="camera_rpy" value="0 0 0" />
+    <arg name="sim" value="true" />
+  </include> -->
+  <arg name="use_sim" default="false" />
+  <param name="use_sim" value="$(arg use_sim)" />
+
+  <arg name="use_distributed" default="false" />
+  <param name="use_distributed" value="$(arg use_distributed)" />
+
+  <!-- Set the param that trajectory_execution_manager needs to find the controller plugin -->
+  <node name="hsrb_task_manager_node" type="state_machine.py" pkg="hsrb_task_manager" output="screen" />
+
+  <!-- The rest of the params are specific to this plugin -->
+  <group if="$(arg use_sim)">
+    <rosparam file="$(find hsrb_task_manager)/config/way_points_sim.yaml"/>
+  </group>
+
+  <group unless="$(arg use_sim)">
+    <rosparam file="$(find hsrb_task_manager)/config/way_points.yaml" />
+    <include file="$(find hsrb_moveit_config)/launch/hsrb_demo_with_controller.launch">
+    </include>
+  </group>
+
+</launch>

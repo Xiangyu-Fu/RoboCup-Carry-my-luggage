@@ -1,0 +1,37 @@
+way_points: {
+   init_pos_1: {
+      x: 4.5,
+      y: -1.85,
+      z: 0.84, 
+      w: 0.55
+    },
+   init_pos_2: {
+      x: 4.45,
+      y: -2.1,
+      z: 0.84,
+      w: 0.53
+    }, 
+   intermediate_pos: {
+      x: 4.19,
+      y: -1.2,
+      z: 0.0,
+      w: 1.0
+    },
+   object_one: {
+      x: 3.1,
+      y: -1.07,
+      z: 1.0,
+      w: 0.008
+    },
+   object_two: {
+      x: 4.6,
+      y: -0.411,
+      z: -0.01,
+      w: 1.0
+    },
+}
+object_names: {
+   target_name: "",
+   object_left: "bottle",
+   object_right: "apple"
+}

@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<package>
+  <name>ics_gazebo</name>
+  <version>2.0.12</version>
+  <description>The ics_gazebo package</description>
+  <maintainer email="rogelio.guadarrama@tum.de.com">Rogelio Guadarrama</maintainer>
+  <license>BSD</license>
+  <author email="rogelio.guadarrama@tum.de.com">Rogelio Guadarrama</author>
+  <buildtool_depend>catkin</buildtool_depend>
+  <run_depend>gazebo_plugins</run_depend>
+
+  <!-- Enable this block to use tiago simulation  -->
+  
+  <!--
+  <run_depend>pal_gazebo_plugins</run_depend>
+  <run_depend>pal_gazebo_worlds</run_depend>
+  <run_depend>pal_hardware_gazebo</run_depend>
+  <run_depend>tiago_bringup</run_depend>
+  <run_depend>tiago_controller_configuration_gazebo</run_depend>
+  <run_depend>tiago_description</run_depend>
+  <run_depend>pal_gripper_controller_configuration_gazebo</run_depend>
+  <run_depend>pal_pcl_points_throttle_and_filter</run_depend>
+  -->
+
+  <!-- Enable this block to use hsrb simulation  -->
+
+  <!--
+  <run_depend>hsrb_gazebo_bringup</run_depend>
+  <run_depend>hsrb_common_launch</run_depend>
+  <run_depend>tmc_potential_maps</run_depend>
+  <run_depend>tmc_roslaunch_tools</run_depend>
+  -->
+
+  <run_depend>rospy</run_depend>
+  <run_depend>play_motion_msgs</run_depend>
+  <run_depend>speed_limit</run_depend>
+  <run_depend>sensor_to_cloud</run_depend>
+</package>

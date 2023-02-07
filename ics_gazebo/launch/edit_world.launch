@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+    <arg name="world_suffix"  default="empty"/>  <!-- empty, small_office, ... (see ../worlds) -->
+    <arg name="gui" default="true"/>
+    <arg name="debug" default="false"/>
+
+    <!-- 
+
+    You can add more paths to the Gazebo environments to include other model libraries.
+
+    TODO: add one of the following paths to the "value" environment variable for Gazebo. Separate each path with ":" (colon).
+
+    ## Model library in tiago packages
+    $(find tiago_gazebo)/models
+
+    ## model library in hsrb packages
+    $(find tmc_gazebo_worlds)/models
+
+    -->
+
+    <env    name="GAZEBO_MODEL_PATH"  
+            value="$(optenv GAZEBO_MODEL_PATH):$(find ics_gazebo)/models"/>
+
+  <!-- start up world -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find ics_gazebo)/worlds/$(arg world_suffix).world"/>
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="debug" value="$(arg debug)"/>
+  </include>
+
+</launch>

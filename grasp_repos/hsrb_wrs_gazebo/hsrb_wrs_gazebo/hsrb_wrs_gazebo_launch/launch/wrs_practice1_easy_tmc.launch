@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="namespace" default="hsrb"/>
+  <arg name="debug" default="false"/>
+  <arg name="gui" default="true" />
+  <arg name="rviz" default="true"/>
+  <arg name="gazebo_visualization" default="false" />
+  <arg name="use_manipulation" default="true" />
+  <arg name="use_navigation" default="true" />
+  <arg name="use_perception" default="true" />
+  <arg name="use_task" default="true" />
+  <arg name="use_teleop" default="true" />
+  <arg name="use_web" default="true" />
+  <arg name="use_laser_odom" default="true" />
+  <arg name="paused" default="true" />
+  <arg name="fast_physics" default="false" />
+  <arg name="highrtf" default="false" />
+  <arg name="with_handle" default="true" />
+  <arg name="use_oss_stacks" default="false" />
+  <arg name="seed" default="2" />
+
+  <include file="$(find hsrb_wrs_gazebo_launch)/launch/include/wrs_common.xml" pass_all_args="true" >
+    <arg name="per_category" value="2" />
+    <arg name="obstacles" value="2" />
+    <arg name="per_row" value="4" />
+  </include>
+</launch>

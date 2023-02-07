@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package>
+  <name>tmc_wrs_gazebo_worlds</name>
+  <version>0.0.0</version>
+  <description>World and model files for WRS Gazebo simulator</description>
+
+  <maintainer email="nobuyuki_matsuno@mail.toyota.co.jp">Nobuyuki Matsuno</maintainer>
+
+  <license>TMC</license>
+
+  <author>Yosuke Matsusaka</author>
+  <author>Nobuyuki Matsuno</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>xacro</build_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>gazebo_ros</run_depend>
+  <run_depend>python-scipy</run_depend>
+</package>

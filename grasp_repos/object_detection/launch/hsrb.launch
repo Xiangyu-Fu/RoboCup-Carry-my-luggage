@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Select a world to spawn the robot -->
+    <arg name="world_suffix" default="empty"/>
+    <arg name="full_run" default="false"/>
+
+    <!-- Initial position for the robot -->
+    <arg name="robot_pos" default="-x -1.1 -y 0.3 -z 0 -Y 0"/>
+
+    <!-- Arguments required for hsrb simulation -->
+    <arg name="use_laser_odom" default="false" />
+    <arg name="paused" default="false" />
+    <arg name="rviz" default="false"/>
+
+    <!-- Set Gazebo environment variables to find the models contained in this package and the hsrb library -->
+    <env name="GAZEBO_MODEL_PATH"  
+        value="$(optenv GAZEBO_MODEL_PATH):$(find object_detection_world)/models:$(find tmc_gazebo_worlds)/models"/>
+    
+    <!-- Spawn robot in simulation -->
+    <include file="$(find hsrb_gazebo_launch)/launch/include/hsrb_gazebo_common.xml" pass_all_args="true" >
+        <arg name="world_name" value="$(find object_detection)/worlds/wrs2020_coke.world" />
+        <arg name="robot_pos" value="$(arg robot_pos)" />
+        <arg name="map" value="$(find tmc_potential_maps)/maps/white_space/map.yaml" />    
+    </include>
+
+    <!-- Launch rviz -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find object_detection_world)/config/hsrb.rviz" required="true" />
+    
+    <!-- Launch controller node -->
+    <node pkg="object_detection" type="hsrb_head_controller" name="hsrb_head_controller" output="screen" />
+    
+    <include file="$(find hsrb_moveit_config)/launch/hsrb_demo_with_controller.launch">
+    </include>
+    
+    <group if="$(arg full_run)">
+        <!-- Use YOLOv3 -->
+        <arg name="network_param_file"         default="$(find darknet_ros)/config/yolov3.yaml"/>
+        <arg name="image" default="/hsrb/head_rgbd_sensor/rgb/image_raw" />
+
+
+        <!-- Include main launch file -->
+        <include file="$(find darknet_ros)/launch/darknet_ros.launch">
+        <arg name="network_param_file"    value="$(arg network_param_file)"/>
+        <arg name="image" value="$(arg image)" />
+        </include>
+        
+        <!-- Launch object segmentation node -->
+        <include file="$(find plane_segmentation)/launch/plane_segmentation_hsrb.launch">
+        </include>
+
+        <!-- Object labeling-->
+        <include file="$(find object_labeling)/launch/object_labeling.launch">
+        </include>
+    </group>
+</launch>

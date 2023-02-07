@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<sdf version="1.4" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <world name="default" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <physics type="ode">
+    </physics>
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+  </world>
+</sdf>

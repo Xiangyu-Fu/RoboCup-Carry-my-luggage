@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="namespace" default="hsrb"/>
+  <arg name="debug" default="false"/>
+  <arg name="gui" default="true" />
+  <arg name="rviz" default="true"/>
+  <arg name="gazebo_visualization" default="false" />
+  <arg name="use_manipulation" default="true" />
+  <arg name="use_navigation" default="true" />
+  <arg name="use_perception" default="true" />
+  <arg name="use_task" default="true" />
+  <arg name="use_teleop" default="true" />
+  <arg name="use_web" default="true" />
+  <arg name="use_laser_odom" default="true" />
+  <arg name="use_oss_stacks" default="false" />
+  <arg name="paused" default="true" />
+  <arg name="fast_physics" default="false" />
+  <arg name="highrtf" default="false" />
+  <arg name="with_handle" default="true" />
+  <arg name="robot_name" default="$(optenv ROBOT_NAME hsrb)" />
+  <arg name="seed" default="1" />
+  <arg name="per_category" default="6" />
+  <arg name="obstacles" default="4" />
+  <arg name="per_row" default="6" />
+
+  <arg name="map" default="$(find tmc_wrs_gazebo_worlds)/maps/wrs2020/map.yaml" />
+
+  <arg unless="$(arg fast_physics)" name="world_suffix" value=""/>
+  <arg     if="$(arg fast_physics)" name="world_suffix" value="_fast"/>
+  <arg unless="$(arg highrtf)" name="world_suffix2" value=""/>
+  <arg     if="$(arg highrtf)" name="world_suffix2" value="_highrtf"/>
+  <arg unless="$(arg with_handle)" name="world_suffix3" value=""/>
+  <arg     if="$(arg with_handle)" name="world_suffix3" value="_knob"/>
+  <arg name="world_name" default="$(find tmc_wrs_gazebo_worlds)/worlds/myworld.world" />
+
+  <arg name="robot_pos" default="-x -2.1 -y 1.2 -z 0 -Y -1.57" />
+
+  <param name="/use_sim_time" value="true" />
+
+  <group unless="$(arg use_oss_stacks)">
+    <include file="$(find hsrb_gazebo_launch)/launch/include/hsrb_gazebo_common.xml">
+      <arg name="debug" value="$(arg debug)"/>
+      <arg name="fast_physics" value="$(arg fast_physics)" />
+      <arg name="gazebo_visualization" value="$(arg gazebo_visualization)" />
+      <arg name="paused" value="$(arg paused)" />
+      <arg name="world_name" value="$(arg world_name)" />
+      <arg name="robot_pos" value="$(arg robot_pos)" />
+      <arg name="gui" value="$(arg gui)"/>
+      <arg name="robot_name" value="$(arg robot_name)" />
+      <arg name="map" value="$(arg map)" />
+      <arg name="namespace" value="$(arg namespace)"/>
+      <arg name="rviz" value="$(arg rviz)"/>
+      <arg name="use_laser_odom" value="$(arg use_laser_odom)" />
+      <arg name="use_manipulation" value="$(arg use_manipulation)" />
+      <arg name="use_navigation" value="$(arg use_navigation)" />
+      <arg name="use_perception" value="$(arg use_perception)" />
+      <arg name="use_task" value="$(arg use_task)" />
+      <arg name="use_teleop" value="$(arg use_teleop)" />
+      <arg name="use_web" value="$(arg use_web)" />
+    </include>
+  </group>
+  <group if="$(arg use_oss_stacks)">
+    <!-- world -->
+    <include file="$(find hsrb_gazebo_bringup)/launch/hsrb_empty_world.launch">
+      <arg name="debug" value="$(arg debug)"/>
+      <arg name="fast_physics" value="$(arg fast_physics)" />
+      <arg name="gazebo_visualization" value="$(arg gazebo_visualization)" />
+      <arg name="use_laser_odom" value="$(arg use_laser_odom)" />
+      <arg name="paused" value="$(arg paused)" />
+      <arg name="world_name" value="$(arg world_name)" />
+      <arg name="robot_pos" value="$(arg robot_pos)" />
+      <arg name="gui" value="$(arg gui)"/>
+      <arg name="robot_name" value="$(arg robot_name)" />
+    </include>
+
+    <!-- moveit-->
+    <!-- <include file="$(find hsrb_moveit_config)/launch/hsrb_demo_with_controller.launch">
+      <arg name="use_gui" value="false"/>
+      <arg name="load_robot_description" value="false"/>
+    </include> -->
+
+    <!-- rosnav -->
+    <include file="$(find hsrb_rosnav_config)/launch/hsrb_nav.launch">
+      <arg name="map_file" value="$(arg map)"/>
+    </include>
+
+    <!-- pose_to_odom -->
+    <node pkg="topic_tools" type="relay" name="odom_relay"
+          args="/hsrb/laser_odom /hsrb/odom" if="$(arg use_laser_odom)" />
+    <node pkg="topic_tools" type="relay" name="odom_relay"
+          args="/hsrb/wheel_odom /hsrb/odom" unless="$(arg use_laser_odom)" />
+  </group>
+
+</launch>

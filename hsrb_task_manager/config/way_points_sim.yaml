@@ -1,0 +1,38 @@
+way_points: {
+   init_pos_1: {
+      x: 1.7350058555603027,
+      y: -1.72,
+      z: 0.58, 
+      w: 0.81
+    },
+   init_pos_2: {
+      x: 1.750058555603027,
+      y: -1.7,
+      z: 0.58, 
+      w: 0.81
+    },
+   intermediate_pos: {
+      x: 1.70058555603027,
+      y: -1.7,
+      z: 0.58, 
+      w: 0.81
+    },
+   object_one: {
+      x: 0.0,
+      y: 0.0,
+      z: 0,
+      w: 0.9999506348765443
+
+    },
+   object_two: {
+      x: 4.594702243804932,
+      y: -1.092961311340332,
+      z: 0.0, 
+      w: 1.0
+    },
+}
+object_names: {
+   target_name: "",
+   object_left: "bottle",
+   object_right: "apple"
+}

@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Select a world to spawn the robot -->
+    <arg name="world_suffix" default="empty"/>
+
+    <!-- Initial position for the robot -->
+    <arg name="robot_pos" default="-x 0.0 -y 0 -z 0 -Y 0"/>
+
+    <!-- Do not change the parameters under this line-->
+
+    <!-- Arguments required for hsrb simulation -->
+    <arg name="use_laser_odom" default="false" />
+    <arg name="paused" default="true" />
+    <arg name="rviz" default="false"/>
+
+    <!-- Set Gazebo environment variables to find the models contained in this package and the hsrb library -->
+    <env name="GAZEBO_MODEL_PATH"  
+         value="$(optenv GAZEBO_MODEL_PATH):$(find ics_gazebo)/models:$(find tmc_gazebo_worlds)/models"/>
+    
+    <!-- Spawn robot in simulation -->
+    <include file="$(find hsrb_gazebo_launch)/launch/include/hsrb_gazebo_common.xml" pass_all_args="true" >
+        <arg name="world_name" value="$(find ics_gazebo)/worlds/$(arg world_suffix).world" />
+        <arg name="robot_pos" value="$(arg robot_pos)" />
+        <arg name="map" value="$(find tmc_potential_maps)/maps/white_space/map.yaml" />    
+    </include>
+
+    <!-- Launch rviz -->
+ 	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find ics_gazebo)/config/hsrb.rviz" required="true" />
+
+</launch>

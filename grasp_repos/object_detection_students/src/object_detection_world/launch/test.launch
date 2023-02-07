@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="object_detection" type="hsrb_head_controller" name="hsrb_head_controller" output="screen" />
+</launch>

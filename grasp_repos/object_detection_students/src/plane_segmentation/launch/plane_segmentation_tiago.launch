@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+
+  <param name="point_cloud_topic" value="/xtion/depth_registered/points" />
+  <param name="base_frame" value="base_footprint" />
+
+  <node name="plane_segmentation_node" pkg="plane_segmentation" type="plane_segmentation_node" output="screen"/>
+  
+</launch>

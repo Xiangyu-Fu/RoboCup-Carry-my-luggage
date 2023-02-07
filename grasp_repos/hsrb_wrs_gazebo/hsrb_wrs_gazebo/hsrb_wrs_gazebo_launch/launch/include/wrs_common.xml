@@ -1,0 +1,254 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="namespace" default="hsrb"/>
+  <arg name="debug" default="false"/>
+  <arg name="gui" default="true" />
+  <arg name="rviz" default="true"/>
+  <arg name="gazebo_visualization" default="false" />
+  <arg name="use_manipulation" default="true" />
+  <arg name="use_navigation" default="true" />
+  <arg name="use_perception" default="true" />
+  <arg name="use_task" default="true" />
+  <arg name="use_teleop" default="true" />
+  <arg name="use_web" default="true" />
+  <arg name="use_laser_odom" default="true" />
+  <arg name="use_oss_stacks" default="false" />
+  <arg name="paused" default="true" />
+  <arg name="fast_physics" default="false" />
+  <arg name="highrtf" default="false" />
+  <arg name="with_handle" default="true" />
+  <arg name="robot_name" default="$(optenv ROBOT_NAME hsrb)" />
+  <arg name="seed" default="1" />
+  <arg name="per_category" default="6" />
+  <arg name="obstacles" default="4" />
+  <arg name="per_row" default="6" />
+
+  <arg name="map" default="$(find tmc_wrs_gazebo_worlds)/maps/wrs2020/map.yaml" />
+
+  <arg unless="$(arg fast_physics)" name="world_suffix" value=""/>
+  <arg     if="$(arg fast_physics)" name="world_suffix" value="_fast"/>
+  <arg unless="$(arg highrtf)" name="world_suffix2" value=""/>
+  <arg     if="$(arg highrtf)" name="world_suffix2" value="_highrtf"/>
+  <arg unless="$(arg with_handle)" name="world_suffix3" value=""/>
+  <arg     if="$(arg with_handle)" name="world_suffix3" value="_knob"/>
+  <arg name="world_name" default="$(find tmc_wrs_gazebo_worlds)/worlds/wrs2020$(arg world_suffix)$(arg world_suffix2)$(arg world_suffix3).world" />
+
+  <arg name="robot_pos" default="-x -2.1 -y 1.2 -z 0 -Y -1.57" />
+
+  <param name="/use_sim_time" value="true" />
+
+  <group unless="$(arg use_oss_stacks)">
+    <include file="$(find hsrb_gazebo_launch)/launch/include/hsrb_gazebo_common.xml">
+      <arg name="debug" value="$(arg debug)"/>
+      <arg name="fast_physics" value="$(arg fast_physics)" />
+      <arg name="gazebo_visualization" value="$(arg gazebo_visualization)" />
+      <arg name="paused" value="$(arg paused)" />
+      <arg name="world_name" value="$(arg world_name)" />
+      <arg name="robot_pos" value="$(arg robot_pos)" />
+      <arg name="gui" value="$(arg gui)"/>
+      <arg name="robot_name" value="$(arg robot_name)" />
+      <arg name="map" value="$(arg map)" />
+      <arg name="namespace" value="$(arg namespace)"/>
+      <arg name="rviz" value="$(arg rviz)"/>
+      <arg name="use_laser_odom" value="$(arg use_laser_odom)" />
+      <arg name="use_manipulation" value="$(arg use_manipulation)" />
+      <arg name="use_navigation" value="$(arg use_navigation)" />
+      <arg name="use_perception" value="$(arg use_perception)" />
+      <arg name="use_task" value="$(arg use_task)" />
+      <arg name="use_teleop" value="$(arg use_teleop)" />
+      <arg name="use_web" value="$(arg use_web)" />
+    </include>
+  </group>
+  <group if="$(arg use_oss_stacks)">
+    <!-- world -->
+    <include file="$(find hsrb_gazebo_bringup)/launch/hsrb_empty_world.launch">
+      <arg name="debug" value="$(arg debug)"/>
+      <arg name="fast_physics" value="$(arg fast_physics)" />
+      <arg name="gazebo_visualization" value="$(arg gazebo_visualization)" />
+      <arg name="use_laser_odom" value="$(arg use_laser_odom)" />
+      <arg name="paused" value="$(arg paused)" />
+      <arg name="world_name" value="$(arg world_name)" />
+      <arg name="robot_pos" value="$(arg robot_pos)" />
+      <arg name="gui" value="$(arg gui)"/>
+      <arg name="robot_name" value="$(arg robot_name)" />
+    </include>
+
+    <!-- moveit-->
+    <include file="$(find hsrb_moveit_config)/launch/hsrb_demo_with_controller.launch">
+      <arg name="use_gui" value="false"/>
+      <arg name="load_robot_description" value="false"/>
+    </include>
+
+    <!-- rosnav -->
+    <include file="$(find hsrb_rosnav_config)/launch/hsrb_nav.launch">
+      <arg name="map_file" value="$(arg map)"/>
+    </include>
+
+    <!-- pose_to_odom -->
+    <node pkg="topic_tools" type="relay" name="odom_relay"
+          args="/hsrb/laser_odom /hsrb/odom" if="$(arg use_laser_odom)" />
+    <node pkg="topic_tools" type="relay" name="odom_relay"
+          args="/hsrb/wheel_odom /hsrb/odom" unless="$(arg use_laser_odom)" />
+  </group>
+
+  <!-- spawn objects to the world -->
+  <node pkg="tmc_wrs_gazebo_worlds" type="spawn_objects" name="spawn_objects" args="--seed $(arg seed) --percategory $(arg per_category) --obstacles $(arg obstacles) --perrow $(arg per_row)" output="screen" />
+
+  <!-- task evaluators -->
+
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="any_in_drawerleft_detector" output="screen">
+    <param name="box_name" value="trofast_1" />
+    <rosparam param="box_size">[0.35, 0.21, 0.25]</rosparam>
+    <rosparam param="box_pose">[0, 0, 0.125]</rosparam>
+    <rosparam param="object_names">['task1_*']</rosparam>
+  </node>
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="shapeitems_in_drawerleft_detector" output="screen">
+    <param name="box_name" value="trofast_1" />
+    <rosparam param="box_size">[0.35, 0.21, 0.25]</rosparam>
+    <rosparam param="box_pose">[0, 0, 0.125]</rosparam>
+    <rosparam param="object_names">['task1_shapeitem_*']</rosparam>
+  </node>
+
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="any_in_drawertop_detector" output="screen">
+    <param name="box_name" value="trofast_2" />
+    <rosparam param="box_size">[0.35, 0.21, 0.25]</rosparam>
+    <rosparam param="box_pose">[0, 0, 0.125]</rosparam>
+    <rosparam param="object_names">['task1_*']</rosparam>
+  </node>
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="tools_in_drawertop_detector" output="screen">
+    <param name="box_name" value="trofast_2" />
+    <rosparam param="box_size">[0.35, 0.21, 0.25]</rosparam>
+    <rosparam param="box_pose">[0, 0, 0.125]</rosparam>
+    <rosparam param="object_names">['task1_tool_*']</rosparam>
+  </node>
+
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="any_in_drawerbottom_detector" output="screen">
+    <param name="box_name" value="trofast_3" />
+    <rosparam param="box_size">[0.35, 0.21, 0.25]</rosparam>
+    <rosparam param="box_pose">[0, 0, 0.125]</rosparam>
+    <rosparam param="object_names">['task1_*']</rosparam>
+  </node>
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="tools_in_drawerbottom_detector" output="screen">
+    <param name="box_name" value="trofast_3" />
+    <rosparam param="box_size">[0.35, 0.21, 0.25]</rosparam>
+    <rosparam param="box_pose">[0, 0, 0.125]</rosparam>
+    <rosparam param="object_names">['task1_tool_*']</rosparam>
+  </node>
+
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="any_in_containera_detector" output="screen">
+    <param name="box_name" value="wrc_container_b" />
+    <rosparam param="box_pose">[0, 0, 0.055]</rosparam>
+    <rosparam param="box_size">[0.18, 0.26, 0.11]</rosparam>
+    <rosparam param="object_names">['task1_*']</rosparam>
+  </node>
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="kitchenitems_in_containera_detector" output="screen">
+    <param name="box_name" value="wrc_container_b" />
+    <rosparam param="box_pose">[0, 0, 0.055]</rosparam>
+    <rosparam param="box_size">[0.18, 0.26, 0.11]</rosparam>
+    <rosparam param="object_names">['task1_kitchenitem_*']</rosparam>
+  </node>
+
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="any_in_containerb_detector" output="screen">
+    <param name="box_name" value="wrc_container_a" />
+    <rosparam param="box_pose">[0, 0, 0.1]</rosparam>
+    <rosparam param="box_size">[0.12, 0.12, 0.2]</rosparam>
+    <rosparam param="object_names">['task1_*']</rosparam>
+  </node>
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="largemarker_in_containerb_detector" output="screen">
+    <param name="box_name" value="wrc_container_a" />
+    <rosparam param="box_pose">[0, 0, 0.1]</rosparam>
+    <rosparam param="box_size">[0.12, 0.12, 0.2]</rosparam>
+    <rosparam param="object_names">['task1_tool_ycb_040_large_marker_*']</rosparam>
+    <rosparam param="object_axes">[0, 1, 0]</rosparam>
+    <rosparam param="target_axes">[0, 0, -1]</rosparam>
+    <rosparam param="allow_degree">45</rosparam>
+    <rosparam param="both_direction">0</rosparam>
+  </node>
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="fork_in_containerb_detector" output="screen">
+    <param name="box_name" value="wrc_container_a" />
+    <rosparam param="box_pose">[0, 0, 0.1]</rosparam>
+    <rosparam param="box_size">[0.12, 0.12, 0.2]</rosparam>
+    <rosparam param="object_names">['task1_kitchenitem_ycb_030_fork_*']</rosparam>
+    <rosparam param="object_axes">[1, 0, 0]</rosparam>
+    <rosparam param="target_axes">[0, 0, 1]</rosparam>
+    <rosparam param="allow_degree">45</rosparam>
+    <rosparam param="both_direction">0</rosparam>
+  </node>
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="spoon_in_containerb_detector" output="screen">
+    <param name="box_name" value="wrc_container_a" />
+    <rosparam param="box_pose">[0, 0, 0.1]</rosparam>
+    <rosparam param="box_size">[0.12, 0.12, 0.2]</rosparam>
+    <rosparam param="object_names">['task1_kitchenitem_ycb_031_spoon_*']</rosparam>
+    <rosparam param="object_axes">[1, 0, 0]</rosparam>
+    <rosparam param="target_axes">[0, 0, 1]</rosparam>
+    <rosparam param="allow_degree">45</rosparam>
+    <rosparam param="both_direction">0</rosparam>
+  </node>
+
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="any_in_traya_detector" output="screen">
+    <param name="box_name" value="wrc_tray_1" />
+    <rosparam param="box_pose">[0, 0, 0.1]</rosparam>
+    <rosparam param="box_size">[0.285, 0.37, 0.2]</rosparam>
+    <rosparam param="object_names">['task1_*']</rosparam>
+  </node>
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="foods_in_traya_detector" output="screen">
+    <param name="box_name" value="wrc_tray_1" />
+    <rosparam param="box_pose">[0, 0, 0.1]</rosparam>
+    <rosparam param="box_size">[0.285, 0.37, 0.2]</rosparam>
+    <rosparam param="object_names">['task1_food_*']</rosparam>
+  </node>
+
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="any_in_trayb_detector" output="screen">
+    <param name="box_name" value="wrc_tray_2" />
+    <rosparam param="box_pose">[0, 0, 0.1]</rosparam>
+    <rosparam param="box_size">[0.285, 0.37, 0.2]</rosparam>
+    <rosparam param="object_names">['task1_*']</rosparam>
+  </node>
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="foods_in_trayb_detector" output="screen">
+    <param name="box_name" value="wrc_tray_2" />
+    <rosparam param="box_pose">[0, 0, 0.1]</rosparam>
+    <rosparam param="box_size">[0.285, 0.37, 0.2]</rosparam>
+    <rosparam param="object_names">['task1_food_*']</rosparam>
+  </node>
+
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="any_in_bina_detector" output="screen">
+    <param name="box_name" value="wrc_bin_green" />
+    <rosparam param="box_pose">[0, 0, 0.165]</rosparam>
+    <rosparam param="box_size">[0.33, 0.38, 0.33]</rosparam>
+    <rosparam param="object_names">['task1_*']</rosparam>
+  </node>
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="taskitems_in_bina_detector" output="screen">
+    <param name="box_name" value="wrc_bin_green" />
+    <rosparam param="box_pose">[0, 0, 0.165]</rosparam>
+    <rosparam param="box_size">[0.33, 0.38, 0.33]</rosparam>
+    <rosparam param="object_names">['task1_taskitem_*']</rosparam>
+  </node>
+
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="any_in_binb_detector" output="screen">
+    <param name="box_name" value="wrc_bin_black" />
+    <rosparam param="box_pose">[0, 0, 0.165]</rosparam>
+    <rosparam param="box_size">[0.33, 0.38, 0.33]</rosparam>
+    <rosparam param="object_names">['task1_*']</rosparam>
+  </node>
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="taskitems_in_binb_detector" output="screen">
+    <param name="box_name" value="wrc_bin_black" />
+    <rosparam param="box_pose">[0, 0, 0.165]</rosparam>
+    <rosparam param="box_size">[0.33, 0.38, 0.33]</rosparam>
+    <rosparam param="object_names">['task1_unknown_*']</rosparam>
+  </node>
+
+  <node pkg="tmc_gazebo_task_evaluators" type="object_in_box_detector" name="hsrb_in_room2_detector" output="screen">
+    <param name="box_name" value="wrc_frame" />
+    <rosparam param="box_pose">[1.5, 0, 1]</rosparam>
+    <rosparam param="box_size">[3, 4, 3]</rosparam>
+    <rosparam param="object_names">['hsrb']</rosparam>
+  </node>
+
+  <node pkg="tmc_gazebo_task_evaluators" type="undesired_contact_detector" name="undesired_contact_detector" output="screen">
+    <param name="target_model_name" value="hsrb" />
+    <rosparam param="except_model_names">['wrc_ground_plane', 'wrc_tray_*', 'wrc_container_*', 'trofast_*', 'task1_*', 'wrc_bookshelf', 'task2_*']</rosparam>
+  </node>
+
+  <node pkg="tmc_gazebo_task_evaluators" type="wrs_score_counter" name="wrs_score_counter" output="screen">
+  </node>
+</launch>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+
+  <param name="point_cloud_topic" value="/hsrb/head_rgbd_sensor/depth_registered/rectified_points" />
+  <param name="base_frame" value="base_link" />
+
+  <node name="plane_segmentation_node" pkg="plane_segmentation" type="plane_segmentation_node" output="screen"/>
+  
+</launch>
