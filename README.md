@@ -31,6 +31,11 @@ roslaunch hsrb_task_manager task_manager.launch use_sim:=true
 
 ## 3. Run in the real robot
 
+rviz(optional)
+```bash
+rosrun rviz rviz  -d `rospack find hsrb_common_launch`/config/hsrb_display_full_hsrc.rviz
+```
+
 ```bash
 cd catkin_ws
 source devel/setup.bash

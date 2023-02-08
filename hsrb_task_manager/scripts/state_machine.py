@@ -14,6 +14,7 @@ import tf.transformations as tr
 
 
 from sensor_msgs.msg import *
+from nav_msgs.msg import *
 from geometry_msgs.msg import *
 import math
 from visualization_msgs.msg import Marker, MarkerArray
@@ -464,9 +465,15 @@ class Grasp(smach.State):
     def execute(self, ud):
         rospy.loginfo("start grasping")
 
-        moveit_commander.roscpp_initialize(sys.argv)
+        # set odom publisher 
+        odom_pub = rospy.Publisher('odom', Odometry, queue_size=50)
 
         self.tf_listener = tf.TransformListener()
+        
+
+        # initialize moveit commander
+        moveit_commander.roscpp_initialize(sys.argv)
+
         self.br = tf.TransformBroadcaster()
 
         self.p_final=geometry_msgs.msg.PoseStamped()
@@ -522,6 +529,21 @@ class Grasp(smach.State):
 
         while not self.flag:
             pass
+        
+        # update the odom
+        (pos, rot) = self.tf_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
+        self.odom =Odometry()
+        self.odom.pose.pose.position.x = pos[0]
+        self.odom.pose.pose.position.y = pos[1]
+        self.odom.pose.pose.position.z = pos[2]
+        self.odom.pose.pose.orientation.x = rot[0]
+        self.odom.pose.pose.orientation.y = rot[1]
+        self.odom.pose.pose.orientation.z = rot[2]
+        self.odom.pose.pose.orientation.w = rot[3]
+
+        # publish the odom
+        odom_pub.publish(self.odom)
+
 
         # check the status of the gpd subprocess
         if not rospy.get_param("/use_distributed"):
@@ -637,7 +659,7 @@ class FollowPerson(smach.State):
             self.target_pos_x = 2.6
             self.target_pos_y = 1.1
         else:
-            self.target_pos_x = rospy.get_param('~target_pos_x', 2.0)
+            self.target_pos_x = rospy.get_param('~target_pos_x', 0.2)
             self.target_pos_y = rospy.get_param('~target_pos_y', 0.2)
 
         self.left_link = rospy.get_param('~left_link', '/left_ankle_hsrb')
@@ -987,7 +1009,7 @@ def main():
         # smach.StateMachine.add('GoToTable_t', GoToTable(), transitions={'succeeded':'GraspTest_t', 'aborted':'GoToTable', 'preempted':'preempted'})
         # smach.StateMachine.add('GraspTest_t', Grasp(), transitions={'succeeded':'succeeded', 'aborted':'GoToTable', 'preempted':'preempted'})
         # Add states to the container
-        smach.StateMachine.add('GoToInitPos1', GoToInitPos1(), transitions={'succeeded':'FollowPerson', 'aborted':'GoToInitPos2', 'preempted':'preempted'})
+        smach.StateMachine.add('GoToInitPos1', GoToInitPos1(), transitions={'succeeded':'GetObject', 'aborted':'GoToInitPos2', 'preempted':'preempted'})
         smach.StateMachine.add('GoToInitPos2', GoToInitPos2(), transitions={'succeeded':'GoToInitPos1', 'aborted':'GoToInitPos1', 'preempted':'preempted'})
         smach.StateMachine.add('GetObject', GetObject(), transitions={'succeeded':'GoToTable', 'aborted':'GoToInitPos1', 'preempted':'preempted'})
         smach.StateMachine.add('GoToTable', GoToTable(), transitions={'succeeded':'Grasp', 'aborted':'GoToTable', 'preempted':'preempted'})
@@ -997,9 +1019,9 @@ def main():
         smach.StateMachine.add('GoToIntermediatePos', GoToIntermediatePos(), transitions={'succeeded':'GoToInitPos', 'aborted':'GoToInitPos', 'preempted':'preempted'})
         
         smach.StateMachine.add('FollowPerson', FollowPerson(), transitions={'succeeded':'Place', 'aborted':'GoToInitPos1', 'preempted':'preempted'})
-        smach.StateMachine.add('Place', Place(), transitions={'succeeded':'GoToInitPos3', 'aborted':'GoToInitPos1', 'preempted':'preempted'})
+        smach.StateMachine.add('Place', Place(), transitions={'succeeded':'succeeded', 'aborted':'GoToInitPos1', 'preempted':'preempted'})
 
-        smach.StateMachine.add('GoToInitPos3', GoToInitPos1(), transitions={'succeeded':'succeeded', 'aborted':'GoToInitPos3', 'preempted':'preempted'})
+        # smach.StateMachine.add('GoToInitPos3', GoToInitPos1(), transitions={'succeeded':'succeeded', 'aborted':'GoToInitPos3', 'preempted':'preempted'})
 
     # Use a introspection for visulize the state machine
     sis = smach_ros.IntrospectionServer('example_server', sm, '/SM_ROOT')
