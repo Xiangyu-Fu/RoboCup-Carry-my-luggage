@@ -11,8 +11,6 @@ import sys
 import tf
 import numpy as np
 import tf.transformations as tr
-
-
 from sensor_msgs.msg import *
 from nav_msgs.msg import *
 from geometry_msgs.msg import *
@@ -21,10 +19,8 @@ from visualization_msgs.msg import Marker, MarkerArray
 import controller_manager_msgs.srv
 import trajectory_msgs.msg
 from gpd_ros.msg import GraspConfigList
-
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 import actionlib
-
 # packages for subprocess
 import os
 from subprocess import Popen, PIPE
@@ -57,6 +53,9 @@ class CtrlHsrb:
                     running = True
 
     def head_move_to_initial(self):
+        """
+        Move the head to the initial position.
+        """
         # fill ROS message
         traj = trajectory_msgs.msg.JointTrajectory()
         traj.joint_names = ["head_pan_joint", "head_tilt_joint"]
@@ -65,11 +64,14 @@ class CtrlHsrb:
         p.velocities = [0, 0]
         p.time_from_start = rospy.Duration(3)
         traj.points = [p]
-
         # publish ROS message
         self.head_pub.publish(traj)
 
     def head_move_to(self, pan=0, tilt=-0.55):
+        """
+        Move the head to the specified position.
+        The joint angles are in radians.
+        """
         # fill ROS message
         traj = trajectory_msgs.msg.JointTrajectory()
         traj.joint_names = ["head_pan_joint", "head_tilt_joint"]
@@ -78,11 +80,14 @@ class CtrlHsrb:
         p.velocities = [0, 0]
         p.time_from_start = rospy.Duration(3)
         traj.points = [p]
-
         # publish ROS message
         self.head_pub.publish(traj)
 
     def hand_move_to(self, arm_roll_joint = -1.5, wrist_flex_joint = -1.5):
+        """
+        Move the hand to the specified position.
+        The joint angles are in radians.
+        """
         # fill ROS message
         traj = trajectory_msgs.msg.JointTrajectory()
         traj.joint_names = ["arm_lift_joint", "arm_flex_joint",
@@ -92,29 +97,25 @@ class CtrlHsrb:
         p.velocities = [0, 0, 0, 0, 0]
         p.time_from_start = rospy.Duration(3)
         traj.points = [p]
-
         # publish ROS message
         self.arm_pub.publish(traj)
 
 
 class GoToInitPos1(smach.State):
+    """
+    This state moves the robot to the initial position.
+    """
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded', 'aborted', 'preempted'])
         self.init_pos = rospy.get_param('/way_points/init_pos_1')
-        
-
     def execute(self, ud):
-
         self.move_head = CtrlHsrb()
         self.move_head.head_move_to_initial()
         self.move_head.hand_move_to(-1.5, -1.5)
-
-        # return 'succeeded'
         # tell the action client that we want to spin a thread by default
         move_base = actionlib.SimpleActionClient('move_base/move', MoveBaseAction)
         # wait for the action server to come up
         move_base.wait_for_server()
-
         rospy.loginfo('Executing state GO_TO_INIT_POS1')
         navGoal = MoveBaseGoal()
         navGoal.target_pose.header.frame_id = "map"
@@ -133,24 +134,18 @@ class GoToInitPos1(smach.State):
 
 class GoToInitPos2(smach.State):
     """
-    this state is used to go to the initial position 2, which make the move_base can work again
+    This state is used to go to the initial position 2, which make the move_base can work again
     """
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded', 'aborted', 'preempted'])
         self.init_pos = rospy.get_param('/way_points/init_pos_2')
-        
     def execute(self, ud):
-
         self.move_head = CtrlHsrb()
         self.move_head.head_move_to_initial()
         self.move_head.hand_move_to(-1.5, -1.5)
-
-        # return 'succeeded'
-        # tell the action client that we want to spin a thread by default
         move_base = actionlib.SimpleActionClient('move_base/move', MoveBaseAction)
         # wait for the action server to come up
         move_base.wait_for_server()
-
         rospy.loginfo('Executing state GO_TO_INIT_POS2')
         navGoal = MoveBaseGoal()
         navGoal.target_pose.header.frame_id = "map"
@@ -168,23 +163,21 @@ class GoToInitPos2(smach.State):
 
 
 class GoToIntermediatePos(smach.State):
+    """
+    This state moves the robot to the intermediate position.
+    """
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded', 'aborted', 'preempted'])
         self.intermediate_pos = rospy.get_param('/way_points/intermediate_pos')
-        
-
     def execute(self, ud):
-
         self.move_head = CtrlHsrb()
         self.move_head.head_move_to_initial()
         self.move_head.hand_move_to(-1.5, -1.5)
-
         # return 'succeeded'
         # tell the action client that we want to spin a thread by default
         move_base = actionlib.SimpleActionClient('move_base/move', MoveBaseAction)
         # wait for the action server to come up
         move_base.wait_for_server()
-
         rospy.loginfo('Executing state GO_TO_INTERMEDIATE_POS')
         navGoal = MoveBaseGoal()
         navGoal.target_pose.header.frame_id = "map"
@@ -202,74 +195,64 @@ class GoToIntermediatePos(smach.State):
 
 
 class GetObject(smach.State):
+    """
+    This state is used to get the posture of the human and go to the table human pointing at.
+    """
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded', 'aborted', 'preempted'])
         self.flag = False
-
         self.object_names = rospy.get_param('/object_names')
         self.obj_1_name = self.object_names['object_left']
         self.obj_2_name = self.object_names['object_right']
-    
 
     def cal_angle_2points(self, point1, point2):
+        """
+        This function is used to calculate the angle between the vector joining two points and z-axis
+        """
         # coordinates of two points 
         x1 = point1[0] 
         y1 = point1[1]
         z1 = point1[2]
-
         x2 = point2[0]
         y2 = point2[1]
         z2 = point2[2]
-
         # calculate the vector joining the two points 
         vx = x2 - x1 
         vy = y2 - y1 
         vz = z2 - z1 
-
         # calculate angle between the vector and z-axis 
         mag = math.sqrt(vx**2 + vy**2 + vz**2) 
         dot_product = vz / mag 
         angle = math.acos(dot_product) 
-
         # convert angle to degrees 
         angle = angle * 180 / math.pi 
         return angle
-        
 
     def execute(self, ud):
         rospy.loginfo('Executing state GET_OBJECT')
-
         if rospy.get_param('/use_sim'):
             self.flag = True
             rospy.set_param('~target_obj', self.obj_1_name)
             return 'succeeded'
-
         # run the get obejct subprocess
         get_object_sproc = Popen("bash /home/athome/catkin_ws/src/hsrb_task_manager/launch/get_object.sh", shell=True, preexec_fn=os.setsid)
-
         # control the head
         self.move_head = CtrlHsrb()
         self.move_head.head_move_to_initial()
-
         listener = tf.TransformListener()
-
         left_num = 0
         right_num = 0
         angle_threshold = 60
         num_threshold = 10
-
         time_count = rospy.Time.now()
-
         while not self.flag:
             try:
                 (right_wrist_pos,rot) = listener.lookupTransform('/base_link', '/right_wrist_hsrb', rospy.Time(0))
                 (right_elbow_pos,rot) = listener.lookupTransform('/base_link', '/right_elbow_hsrb', rospy.Time(0))
                 (left_wrist_pos,rot) = listener.lookupTransform('/base_link', '/left_wrist_hsrb', rospy.Time(0))
                 (left_elbow_pos,rot) = listener.lookupTransform('/base_link', '/left_elbow_hsrb', rospy.Time(0))
-
                 angle_right_arm = self.cal_angle_2points(right_wrist_pos, right_elbow_pos)
                 angle_left_arm = self.cal_angle_2points(left_wrist_pos, left_elbow_pos)
-
                 if rospy.Time.now() - time_count > rospy.Duration(90):
                     rospy.logerr('Executing state GET_OBJECT FAILED')
                     rospy.logerr('Please check the hri human detection node ...')
@@ -277,7 +260,6 @@ class GetObject(smach.State):
                     rospy.set_param('~target_obj', self.obj_1_name)
                     self.flag = True
                     os.killpg(os.getpgid(get_object_sproc.pid), signal.SIGTERM)
-
                     return 'aborted'
                 
                 if angle_right_arm > angle_threshold:
@@ -310,28 +292,25 @@ class GetObject(smach.State):
         rospy.loginfo('Executing state GET_OBJECT SUCCEEDED')
         return 'succeeded'
 
-
 class GoToTable(smach.State):
+    """
+    This state is used to go to the table human pointing at.
+    """
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded', 'aborted', 'preempted'])
-
         # get different table position from param server
         self.obj_1_pos = rospy.get_param('/way_points/object_one')
         self.obj_2_pos = rospy.get_param('/way_points/object_two')
-
         self.object_names = rospy.get_param('/object_names')
         self.obj_1_name = self.object_names['object_left']
         self.obj_2_name = self.object_names['object_right']
-
         self.flag = False
         
-
     def execute(self, ud):
         # tell the action client that we want to spin a thread by default
         move_base = actionlib.SimpleActionClient('move_base/move', MoveBaseAction)
         # wait for the action server to come up
         move_base.wait_for_server()
-
         if rospy.get_param('/use_sim'):
             rospy.set_param('~target_obj', 'bottle')
 
@@ -382,10 +361,12 @@ class GoToTable(smach.State):
                 
 
 class Grasp(smach.State):
+    """
+    This state is used to grasp the object.
+    """
     def __init__(self, wait=3.0):
         # define the outcome of the state
         smach.State.__init__(self, outcomes=['succeeded', 'aborted', 'preempted'])
-
         self.flag = False
         self.wait=wait
 
@@ -394,8 +375,6 @@ class Grasp(smach.State):
             rospy.logwarn("No grasps found")
             return
         self.selected_grasp = msg.grasps[0]
-        # print(self.selected_grasp)
-
         # Create a PoseStamped message from the GraspConfig message
         p = geometry_msgs.msg.PoseStamped()
         p.header.frame_id = msg.header.frame_id
@@ -416,11 +395,9 @@ class Grasp(smach.State):
         rospy.Time.now(),
         "selected_grasp",
         p.header.frame_id)
-
         # Rotate the selected grasp frame to /hand_palm_link
         p_rot = geometry_msgs.msg.PoseStamped()
         p_rot.header.frame_id = "/selected_grasp"
-
         qx = tr.quaternion_about_axis(np.pi,(1,0,0))
         qy = tr.quaternion_about_axis(np.pi/2, (0,1,0))
         q = tr.quaternion_multiply(qx,qy)
@@ -428,7 +405,6 @@ class Grasp(smach.State):
         p_rot.pose.orientation.y=q[1]
         p_rot.pose.orientation.z=q[2]
         p_rot.pose.orientation.w=q[3]
-
         # ----------------- transform final grasp position to /odom -------------------
         self.tf_listener.waitForTransform('odom','/selected_grasp', rospy.Time(), rospy.Duration(4.0))
         self.p_final = self.tf_listener.transformPose('odom', p_rot)
@@ -438,8 +414,6 @@ class Grasp(smach.State):
         rospy.Time.now(),
         "/p_final",
         self.p_final.header.frame_id)
-        # rospy.loginfo(self.p_final)
-        
         # set an intermidate position wrt. final grasp pose
         way_point = geometry_msgs.msg.PoseStamped()
         way_point.header.frame_id = "/p_final"
@@ -447,38 +421,27 @@ class Grasp(smach.State):
         way_point.pose.position.y = 0
         way_point.pose.position.z = -0.15
         way_point.pose.orientation.w = 1 
-
         # Transform the pose from /p_final to odom
         self.tf_listener.waitForTransform('odom','/p_final', rospy.Time(), rospy.Duration(4.0))
         self.way_point = self.tf_listener.transformPose('odom', way_point)
-
         self.br.sendTransform((self.way_point.pose.position.x, self.way_point.pose.position.y, self.way_point.pose.position.z),
         (self.way_point.pose.orientation.x, self.way_point.pose.orientation.y, self.way_point.pose.orientation.z, self.way_point.pose.orientation.w),
         rospy.Time.now(),
         "/way_point",
         self.way_point.header.frame_id)   
-
         self.flag = True
 
-
-    
     def execute(self, ud):
         rospy.loginfo("start grasping")
-
         # set odom publisher 
         odom_pub = rospy.Publisher('odom', Odometry, queue_size=50)
-
         self.tf_listener = tf.TransformListener()
-        
-
         # initialize moveit commander
         moveit_commander.roscpp_initialize(sys.argv)
-
         self.br = tf.TransformBroadcaster()
-
         self.p_final=geometry_msgs.msg.PoseStamped()
         self.way_point=geometry_msgs.msg.PoseStamped()
-       
+
         self.arm = moveit_commander.MoveGroupCommander('arm',
                                                   wait_for_servers=0.0)
 
@@ -505,19 +468,16 @@ class Grasp(smach.State):
         pre_force_list = force_sensor_capture.get_current_force()
         print("pre_force_list: ",pre_force_list)
 
-        
         rospy.loginfo("open gripper")
         self.end_effector = self.whole_body_light.get_end_effector_link()
         self.gripper.set_joint_value_target("hand_motor_joint", 1.0)
         self.gripper.go()
         rospy.logdebug("ready to take grasp pose...")
         rospy.sleep(3.0)
-  
         self.move_head = CtrlHsrb()
         self.move_head.head_move_to(tilt=-0.66)
         self.move_head.hand_move_to()
         rospy.loginfo('Waiting for GRASP pose...')
-
         ''' The gpd and plane segmentation nodes are not stable, so run it in another computer.'''
         if not rospy.get_param("/use_distributed"):
             gpd_subprocess = Popen("bash /home/athome/catkin_ws/src/hsrb_task_manager/launch/run_gpd.sh", shell=True, preexec_fn=os.setsid)
@@ -529,7 +489,6 @@ class Grasp(smach.State):
 
         while not self.flag:
             pass
-        
         # update the odom
         (pos, rot) = self.tf_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
         self.odom =Odometry()
@@ -540,11 +499,8 @@ class Grasp(smach.State):
         self.odom.pose.pose.orientation.y = rot[1]
         self.odom.pose.pose.orientation.z = rot[2]
         self.odom.pose.pose.orientation.w = rot[3]
-
         # publish the odom
         odom_pub.publish(self.odom)
-
-
         # check the status of the gpd subprocess
         if not rospy.get_param("/use_distributed"):
             os.killpg(os.getpgid(gpd_subprocess.pid), signal.SIGTERM) 
@@ -558,7 +514,6 @@ class Grasp(smach.State):
         self.whole_body_light.go()
         rospy.loginfo("done")
         rospy.sleep(2.0)
-
         
         # ----------------- move to final grasp position -------------------
         rospy.loginfo("go to grasp position")
@@ -568,11 +523,9 @@ class Grasp(smach.State):
         self.whole_body_light.go()
         rospy.loginfo("done")
         rospy.sleep(self.wait)
-
         rospy.loginfo("grasp!")
         self.gripper.set_joint_value_target("hand_motor_joint", -0.1)
         self.gripper.go()
-
         rospy.loginfo("arm back")
         self.arm.set_named_target("neutral")
         self.arm.go()
@@ -595,18 +548,15 @@ class Grasp(smach.State):
 
 
 class ForceSensorCapture(object):
-    """Subscribe and hold force sensor data"""
-
+    """This state is used to subscribe and hold force sensor data"""
     def __init__(self):
         self._force_data_x = 0.0
         self._force_data_y = 0.0
         self._force_data_z = 0.0
-
         # Subscribe force torque sensor data from HSRB
         ft_sensor_topic = '/hsrb/wrist_wrench/raw'
         self._wrist_wrench_sub = rospy.Subscriber(
             ft_sensor_topic, WrenchStamped, self.__ft_sensor_cb)
-
         # Wait for connection
         try:
             rospy.wait_for_message(ft_sensor_topic, WrenchStamped,
@@ -632,12 +582,13 @@ class ForceSensorCapture(object):
         return math.sqrt(square_sums)
 
 
-
 class FollowPerson(smach.State):
+    """
+    This state is used to follow a person
+    """
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded', 'aborted', 'preempted'])
         self.tf_listener = tf.TransformListener()
-
         self.enable_back = rospy.get_param('~enable_back', True)
         self.max_vx = rospy.get_param('~max_vx', 0.2)
         self.max_va = rospy.get_param('~max_va', 2.0)
@@ -645,7 +596,6 @@ class FollowPerson(smach.State):
         self.gain_va = rospy.get_param('~gain_va', 1.0)
         self.distance = rospy.get_param('~distance', 0)
         self.timeout = rospy.get_param('~timeout', 5.0)
-
         self.last_time = rospy.Time.now()
 
         # set up the globel twist for cmd vel
@@ -667,7 +617,6 @@ class FollowPerson(smach.State):
 
     def tracks_callback(self, tracks_msg):
         target = tracks_msg.tracks
-    
         if len(target) == 0:
             print("No target found")
             self.find_person = False
@@ -675,10 +624,6 @@ class FollowPerson(smach.State):
         else:
             print("Find target")
             self.find_person = True
-            # stop the robot if find target
-            # self.vx = 0.0
-            # self.va = 0.0
-            # self.cmd_vel_pub.publish(self.twist)
         
         if self.find_person == True:
             point = PointStamped()
@@ -701,12 +646,7 @@ class FollowPerson(smach.State):
                 else:
                     self.person_stop = False
                     print("Person moving")
-                # intersec_x, intersec_y = self.get_intersec_point(target_pos.point.x, target_pos.point.y, self.distance)
-                # goal.target_pose.pose.position.x = intersec_x
-                # goal.target_pose.pose.position.y = intersec_y
-                # goal.target_pose.pose.orientation.w = 1.0
-                # print('goal:', goal.target_pose.pose.position.x, goal.target_pose.pose.position.y)
-                # self.move_base.send_goal(goal)
+
                 rospy.sleep(0.5)
 
             except:
@@ -717,11 +657,9 @@ class FollowPerson(smach.State):
 
             # calculate the rotate angle
             theta = math.atan2(point.point.y, point.point.x)
-
             va = min(self.max_va, max(-self.max_va, theta * self.gain_va))
             vx = 0.0
             if abs(theta) < math.radians(45):
-                # print("target_pos.point.x:", target_pos.point.x)
                 vx = (point.point.x - self.distance) * self.gain_vx
                 min_vx = -self.max_vx if self.enable_back else 0.0
                 vx = min(self.max_vx, max(min_vx, vx))
@@ -749,11 +687,9 @@ class FollowPerson(smach.State):
     def get_intersec_point(self, x, y, r):
         # calculate the distance between the point and the origin
         d = math.sqrt(x**2 + y**2)
-
         # calculate the the intersection point
         x_intersection = x - r*x/d
         y_intersection = y - r*y/d
-
         return x_intersection, y_intersection
 
     def command_pub(self):
@@ -792,15 +728,11 @@ class FollowPerson(smach.State):
         try:
             (right_ankle_hsrb,rot) = self.listener.lookupTransform('/base_link', self.right_link, rospy.Time(0))
             (left_ankle_hsrb,rot) = self.listener.lookupTransform('/base_link', self.left_link, rospy.Time(0))
-
             (right_ankle_map,rot) = self.listener.lookupTransform('/map', '/base_link', rospy.Time(0))
             (left_ankle_map,rot) = self.listener.lookupTransform('/map', '/base_link', rospy.Time(0))
-    
-
             # get the center of the person to the map
             self.person_x_map = (right_ankle_map[0] + left_ankle_map[0]) / 2.0
             self.person_y_map = (right_ankle_map[1] + left_ankle_map[1]) / 2.0
-
             rospy.loginfo("distance to target: %f", math.sqrt((self.person_x_map - self.target_pos_x)**2 + (self.person_y_map - self.target_pos_y)**2))
             # detect if the person is near to the target pos
             if math.sqrt((self.person_x_map - self.target_pos_x)**2 + (self.person_y_map - self.target_pos_y)**2) < 1.0:
@@ -816,10 +748,8 @@ class FollowPerson(smach.State):
             # get the center of the person to the base_link
             self.person_x = (right_ankle_hsrb[0] + left_ankle_hsrb[0]) / 2.0
             self.person_y = (right_ankle_hsrb[1] + left_ankle_hsrb[1]) / 2.0
-
             self.person_x = self.low_pass_filter(self.person_x, self.person_x_old, 0.8)
             self.person_y = self.low_pass_filter(self.person_y, self.person_y_old, 0.8)
-
             self.person_x_old = self.person_x
             self.person_y_old = self.person_y
 
@@ -848,13 +778,10 @@ class FollowPerson(smach.State):
 
         self.vx = self.gain_vx*vx
         self.va = self.gain_va*va
-
-        # print('vx:', self.vx, 'va:', self.va)      
         self.last_time = rospy.Time.now()
         self.twist.linear.x = self.vx
         self.twist.angular.z = self.va
         self.cmd_vel_pub.publish(self.twist)
-
         # update the last time
         self.last_time = rospy.Time.now()
 
@@ -895,10 +822,8 @@ class FollowPerson(smach.State):
         else:
             self.stop_robot()
 
-   
     def execute(self, userdata):
         rospy.loginfo('Executing state FOLLOW_PERSON')
-
         '''
         !!! Notice the following code is for the monocular people following package, but now it have been deprecated 
         # run the start camera subprocess
@@ -911,7 +836,6 @@ class FollowPerson(smach.State):
         # wait for the action server to come up
         self.move_base.wait_for_server()
         '''
-        
         # run the get obejct subprocess, here we reuse the get object subprocess
         following_subprocess = Popen("bash /home/athome/catkin_ws/src/hsrb_task_manager/launch/get_object.sh", shell=True, preexec_fn=os.setsid)
         rospy.sleep(5)
@@ -937,7 +861,6 @@ class FollowPerson(smach.State):
                 # get the initial person position
                 self.person_x_old = (right_ankle_hsrb[0] + left_ankle_hsrb[0]) / 2.0
                 self.person_y_old = (right_ankle_hsrb[1] + left_ankle_hsrb[1]) / 2.0
-
                 tf_ready = True
 
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
@@ -959,11 +882,12 @@ class FollowPerson(smach.State):
 
 
 class Place(smach.State):
+    """
+    This state is used to place the object to the person.
+    """
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded', 'aborted', 'preempted'])
-
         self.reference_frame = "map"
-
         # initialize the moveit_commander
         self.goal = MoveBaseGoal()
 
@@ -997,31 +921,24 @@ class Place(smach.State):
 def main():
     # Initialize the node
     rospy.init_node('hsrb_task_manager_node')
-
+    
     # set up some global variables
     global object 
     object = "None"
-
     # Create a SMACH state machine  
     sm = smach.StateMachine(outcomes=['succeeded', 'aborted', 'preempted'])
 
     with sm:
-        # smach.StateMachine.add('GoToTable_t', GoToTable(), transitions={'succeeded':'GraspTest_t', 'aborted':'GoToTable', 'preempted':'preempted'})
-        # smach.StateMachine.add('GraspTest_t', Grasp(), transitions={'succeeded':'succeeded', 'aborted':'GoToTable', 'preempted':'preempted'})
         # Add states to the container
         smach.StateMachine.add('GoToInitPos1', GoToInitPos1(), transitions={'succeeded':'GetObject', 'aborted':'GoToInitPos2', 'preempted':'preempted'})
         smach.StateMachine.add('GoToInitPos2', GoToInitPos2(), transitions={'succeeded':'GoToInitPos1', 'aborted':'GoToInitPos1', 'preempted':'preempted'})
         smach.StateMachine.add('GetObject', GetObject(), transitions={'succeeded':'GoToTable', 'aborted':'GoToInitPos1', 'preempted':'preempted'})
         smach.StateMachine.add('GoToTable', GoToTable(), transitions={'succeeded':'Grasp', 'aborted':'GoToTable', 'preempted':'preempted'})
         smach.StateMachine.add('Grasp', Grasp(), transitions={'succeeded':'GoToInitPos', 'aborted':'GoToIntermediatePos', 'preempted':'preempted'})
-
         smach.StateMachine.add('GoToInitPos', GoToInitPos1(), transitions={'succeeded':'FollowPerson', 'aborted':'GoToIntermediatePos', 'preempted':'preempted'})
         smach.StateMachine.add('GoToIntermediatePos', GoToIntermediatePos(), transitions={'succeeded':'GoToInitPos', 'aborted':'GoToInitPos', 'preempted':'preempted'})
-        
         smach.StateMachine.add('FollowPerson', FollowPerson(), transitions={'succeeded':'Place', 'aborted':'GoToInitPos1', 'preempted':'preempted'})
         smach.StateMachine.add('Place', Place(), transitions={'succeeded':'succeeded', 'aborted':'GoToInitPos1', 'preempted':'preempted'})
-
-        # smach.StateMachine.add('GoToInitPos3', GoToInitPos1(), transitions={'succeeded':'succeeded', 'aborted':'GoToInitPos3', 'preempted':'preempted'})
 
     # Use a introspection for visulize the state machine
     sis = smach_ros.IntrospectionServer('example_server', sm, '/SM_ROOT')
