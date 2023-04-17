@@ -1,4 +1,16 @@
 # Robotcup final project "Carry my luggage"
+
+In this project, the robot is asked
+to follow the command from human to pick up
+a specified object, carry it, follow the human to
+another room, and eventually, hand the object over
+to the human again. To complete these tasks, the
+robot has to detect human posture, grasp objects,
+follow human.
+
+
+![image](https://user-images.githubusercontent.com/54738414/232415961-cf3f7eb2-f69b-4913-844c-c48c55b65f02.png)
+
 ## 1. Setup the env
 ```bash
 cd src/grasp_repos/gpd
