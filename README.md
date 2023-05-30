@@ -11,6 +11,10 @@ follow human.
 
 ![image](https://user-images.githubusercontent.com/54738414/232415961-cf3f7eb2-f69b-4913-844c-c48c55b65f02.png)
 
+Watch the video:
+
+[![Watch the video](https://i9.ytimg.com/vi_webp/M-j3pvWNksI/mq1.webp?sqp=CKjV1qMG-oaymwEmCMACELQB8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGFggZShAMA8%3D&rs=AOn4CLB8AKelkInYAicwfLljrCPukb485w&retry=4)](https://youtu.be/M-j3pvWNksI)
+
 ## 1. Setup the env
 ```bash
 cd src/grasp_repos/gpd
